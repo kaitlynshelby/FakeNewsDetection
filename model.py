@@ -65,9 +65,9 @@ for line in real_tweets.readlines():
 fake_tweets.close()
 real_tweets.close()
 
-# find most frequent words longer than 1 character
+# find most frequent words 
 all_words = nltk.FreqDist(all_words)
-word_features = list(all_words.keys())[:3500]
+word_features = list(all_words.keys())[:3000]
 
 
 # determine if a frequent word is in the given file
@@ -87,26 +87,30 @@ training_features = [(find_features(tweet), category) for (tweet, category) in t
 testing_features = [(find_features(tweet), category) for (tweet, category) in testing_set]
 
 # classifiers and acronyms
+
 classifiers = [(nltk.NaiveBayesClassifier, "nb"),
                (SklearnClassifier(MultinomialNB()), "mnb"),
                (SklearnClassifier(BernoulliNB()), "bnb"),
                (SklearnClassifier(LogisticRegression()), "lr"),
                (SklearnClassifier(SGDClassifier()), "sgd"),
-               #(SklearnClassifier(SVC()), "svc"),
                (SklearnClassifier(LinearSVC()), "lsvc"),
                (SklearnClassifier(NuSVC()), "nsvc")]
 
 # train and save classifiers
+
 for c in classifiers:
-    c[0].train(training_features)
+    train = c[0].train(training_features)
     with open("saved_classifiers/" + c[1] + ".pickle", "wb") as output_file:
-        pickle.dump(c[0], output_file)
+        pickle.dump(train, output_file)
+    output_file.close()
 
 
 # load classifiers
 def load_classifier(acronym):
     with open("saved_classifiers/" + acronym + ".pickle", "rb") as input_file:
-        return pickle.load(input_file)
+        load_f = pickle.load(input_file)
+    input_file.close()
+    return load_f
 
 
 nb_classifier = load_classifier("nb")
@@ -142,9 +146,6 @@ print("LogisticRegression classifier accuracy percent:",
 
 print("SGD classifier accuracy percent:",
       (nltk.classify.accuracy(sgd_classifier, testing_features))*100)
-
-#print("SVC classifier accuracy percent:",
-#      (nltk.classify.accuracy(svc_classifier, testing_features))*100)
 
 print("LinearSVC classifier accuracy percent:",
       (nltk.classify.accuracy(lsvc_classifier, testing_features))*100)
