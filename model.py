@@ -1,15 +1,13 @@
 import nltk
+from nltk.classify import ClassifierI
+from nltk.classify.scikitlearn import SklearnClassifier
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
-import random
 import pickle
-from nltk.classify.scikitlearn import SklearnClassifier
-
+import random
 from sklearn.naive_bayes import MultinomialNB, BernoulliNB
 from sklearn.linear_model import LogisticRegression, SGDClassifier
 from sklearn.svm import SVC, LinearSVC, NuSVC
-
-from nltk.classify import ClassifierI
 from statistics import mode
 
 
@@ -51,16 +49,16 @@ all_words = []
 
 
 # ignore uninteresting words
-#stopwords = set(stopwords.words('english'))
+stopwords = set(stopwords.words('english'))
 
 for line in fake_tweets.readlines():
     for t in word_tokenize(line):
-        #if t not in stopwords:
+        if t not in stopwords:
             all_words.append(t.lower())
 
 for line in real_tweets.readlines():
     for t in word_tokenize(line):
-        #if t not in stopwords:
+        if t not in stopwords:
             all_words.append(t.lower())
 
 
@@ -86,83 +84,38 @@ training_set = categorized_tweets[:5505]
 testing_set = categorized_tweets[5505:]
 
 training_features = [(find_features(tweet), category) for (tweet, category) in training_set] 
-testing_features = [(find_features(tweet), category) for (tweet, category) in testing_set] 
+testing_features = [(find_features(tweet), category) for (tweet, category) in testing_set]
 
-# train and save all classifiers
-nb_classifier = nltk.NaiveBayesClassifier.train(training_features)
-save_classifier = open("nb.pickle","wb")
-pickle.dump(nb_classifier, save_classifier)
-save_classifier.close()
+# classifiers and acronyms
+classifiers = [(nltk.NaiveBayesClassifier, "nb"),
+               (SklearnClassifier(MultinomialNB()), "mnb"),
+               (SklearnClassifier(BernoulliNB()), "bnb"),
+               (SklearnClassifier(LogisticRegression()), "lr"),
+               (SklearnClassifier(SGDClassifier()), "sgd"),
+               #(SklearnClassifier(SVC()), "svc"),
+               (SklearnClassifier(LinearSVC()), "lsvc"),
+               (SklearnClassifier(NuSVC()), "nsvc")]
 
-mnb_classifier = SklearnClassifier(MultinomialNB())
-mnb_classifier.train(training_features)
-save_classifier = open("mnb.pickle","wb")
-pickle.dump(mnb_classifier, save_classifier)
-save_classifier.close()
-
-bnb_classifier = SklearnClassifier(BernoulliNB())
-bnb_classifier.train(training_features)
-save_classifier = open("bnb.pickle","wb")
-pickle.dump(bnb_classifier, save_classifier)
-save_classifier.close()
-
-lr_classifier = SklearnClassifier(LogisticRegression())
-lr_classifier.train(training_features)
-save_classifier = open("lr.pickle","wb")
-pickle.dump(lr_classifier, save_classifier)
-save_classifier.close()
-
-sgd_classifier = SklearnClassifier(SGDClassifier())
-sgd_classifier.train(training_features)
-save_classifier = open("sgd.pickle","wb")
-pickle.dump(sgd_classifier, save_classifier)
-save_classifier.close()
-
-#svc_classifier = SklearnClassifier(SVC())
-#svc_classifier.train(training_features)
-
-lsvc_classifier = SklearnClassifier(LinearSVC())
-lsvc_classifier.train(training_features)
-save_classifier = open("lsvc.pickle","wb")
-pickle.dump(lsvc_classifier, save_classifier)
-save_classifier.close()
-
-nsvc_classifier = SklearnClassifier(NuSVC())
-nsvc_classifier.train(training_features)
-save_classifier = open("nsvc.pickle","wb")
-pickle.dump(nsvc_classifier, save_classifier)
-save_classifier.close()
-
+# train and save classifiers
+for c in classifiers:
+    c[0].train(training_features)
+    with open("saved_classifiers/" + c[1] + ".pickle", "wb") as output_file:
+        pickle.dump(c[0], output_file)
 
 
 # load classifiers
-classifier_f = open("nb.pickle", "rb")
-nb_classifier = pickle.load(classifier_f)
-classifier_f.close()
+def load_classifier(acronym):
+    with open("saved_classifiers/" + acronym + ".pickle", "rb") as input_file:
+        return pickle.load(input_file)
 
-classifier_f = open("mnb.pickle", "rb")
-mnb_classifier = pickle.load(classifier_f)
-classifier_f.close()
 
-classifier_f = open("bnb.pickle", "rb")
-bnb_classifier = pickle.load(classifier_f)
-classifier_f.close()
-
-classifier_f = open("lr.pickle", "rb")
-lr_classifier = pickle.load(classifier_f)
-classifier_f.close()
-
-classifier_f = open("sgd.pickle", "rb")
-sgd_classifier = pickle.load(classifier_f)
-classifier_f.close()
-
-classifier_f = open("lsvc.pickle", "rb")
-lsvc_classifier = pickle.load(classifier_f)
-classifier_f.close()
-
-classifier_f = open("nsvc.pickle", "rb")
-nsvc_classifier = pickle.load(classifier_f)
-classifier_f.close()
+nb_classifier = load_classifier("nb")
+mnb_classifier = load_classifier("mnb")
+bnb_classifier = load_classifier("bnb")
+lr_classifier = load_classifier("lr")
+sgd_classifier = load_classifier("sgd")
+lsvc_classifier = load_classifier("lsvc")
+nsvc_classifier = load_classifier("nsvc")
 
 voted_classifier = VoteClassifier(nb_classifier,
                                   mnb_classifier,
@@ -171,9 +124,6 @@ voted_classifier = VoteClassifier(nb_classifier,
                                   sgd_classifier,
                                   lsvc_classifier,
                                   nsvc_classifier)
-
-
-
 
 # print accuracies
 print("Naive Bayes classifier accuracy percent:",
@@ -206,14 +156,11 @@ print("Voted classifier accuracy percent:",
       (nltk.classify.accuracy(voted_classifier, testing_features))*100)
 
 
-
 # give each tweet an individual score
 tagged_tweets = []
-
 
 for (tweet, category) in testing_set:
     auth = voted_classifier.classify(find_features(tweet))
     print(tweet + '\n\t\t' + auth)
     print()
     tagged_tweets.append(tuple([tweet, auth]))
-
