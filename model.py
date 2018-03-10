@@ -127,32 +127,9 @@ voted_classifier = VoteClassifier(nb_classifier,
                                   nsvc_classifier)
 
 # print accuracies
-print("Naive Bayes classifier accuracy percent:",
-      (nltk.classify.accuracy(nb_classifier, testing_features))*100)
-
-nb_classifier.show_most_informative_features(15)
-
-print("MNB classifier accuracy percent:",
-      (nltk.classify.accuracy(mnb_classifier, testing_features))*100)
-
-print("BernoulliNB classifier accuracy percent:",
-      (nltk.classify.accuracy(bnb_classifier, testing_features))*100)
-
-print("LogisticRegression classifier accuracy percent:",
-      (nltk.classify.accuracy(lr_classifier, testing_features))*100)
-
-print("SGD classifier accuracy percent:",
-      (nltk.classify.accuracy(sgd_classifier, testing_features))*100)
-
-print("LinearSVC classifier accuracy percent:",
-      (nltk.classify.accuracy(lsvc_classifier, testing_features))*100)
-
-##print("NuSVC classifier accuracy percent:",
-##      (nltk.classify.accuracy(nsvc_classifier, testing_features))*100)
-
-print("Voted classifier accuracy percent:", 
+print("Accuracy percent:", 
       (nltk.classify.accuracy(voted_classifier, testing_features))*100)
-
+print()
 
 # give each tweet an individual score
 tagged_tweets = []
